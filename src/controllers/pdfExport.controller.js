@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.models.js";
 import { EventRegistration } from "../models/eventRegistration.models.js";
 import { ApiError } from "../utils/ApiError.js";
-import { generateParticipantTickets } from "../services/pdfExport.service.js";
+import { generateParticipantTickets, generateProgramParticipantsList } from "../services/pdfExport.service.js";
 
 const getParticipantTickets = asyncHandler(async (req, res, next) => {
   const collegeId = req.user.id;
@@ -138,7 +138,77 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
   res.send(Buffer.from(pdfByte));
 });
 
+const getProgramParticipantsListById = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  
+  const participants = [
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+    { name: "John Doe", regId: "REG001", college: "Sample College" },
+    { name: "John Doe 1", regId: "REG002", college: "Sample College" },
+    { name: "John Doe 2", regId: "REG003", college: "Sample College" },
+  ];
+
+  const pdfByte = await generateProgramParticipantsList("Mappilappattu", participants);
+
+  res.set({
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="participants-list.pdf"`,
+  });
+  res.send(Buffer.from(pdfByte));
+});
+
 export const pdfExportController = {
   getParticipantTickets,
   getParticipantTicketById,
+  getProgramParticipantsListById,
 };

@@ -33,6 +33,7 @@ router.route("/events").get(eventController.fetchAllEvents);
 // PDF export routes
 router.route("/participant-tickets").get(pdfExportController.getParticipantTickets);
 router.route("/ticket/:id").get(pdfExportController.getParticipantTicketById);
+router.route("/program-participants/:id").get(pdfExportController.getProgramParticipantsListById);
 
 
 // configs 
