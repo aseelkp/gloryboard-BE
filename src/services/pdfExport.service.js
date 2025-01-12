@@ -6,8 +6,8 @@ import { getZoneConfig } from "../utils/zoneConfig.js";
 export const generateParticipantTickets = async (users) => {
   try {
     const copies = [`${zone.toLocaleUpperCase()}-Zone Copy`, "Student Copy"];
-    const { primaryColor, headerImagePath, footerText } = getZoneConfig(zone);
-    if (!primaryColor || !headerImagePath) {
+    const { primaryColor, ticketHeaderImagePath, footerText } = getZoneConfig(zone);
+    if (!primaryColor || !ticketHeaderImagePath) {
       throw new Error("Zone configuration not found");
     }
 
@@ -22,7 +22,7 @@ export const generateParticipantTickets = async (users) => {
     const pageHeight = 841.89; // A4 height in points
     const margin = 25;
 
-    const headerImageFile = fs.readFileSync(headerImagePath);
+    const headerImageFile = fs.readFileSync(ticketHeaderImagePath);
     const headerImage = await pdfDoc.embedPng(headerImageFile);
     const { width: headerImageWidth, height: headerImageHeight } =
       headerImage.scaleToFit(pageWidth - 2 * margin, 165);
@@ -407,6 +407,186 @@ export const generateParticipantTickets = async (users) => {
         } while (nextPage);
         // }
       }
+    }
+
+    return await pdfDoc.save();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const generateProgramParticipantsList = async (programName, participants) => {
+  try {
+    const { generalHeaderImagePath } = getZoneConfig(zone);
+    if (!generalHeaderImagePath) {
+      throw new Error("Zone configuration not found");
+    }
+
+    const pdfDoc = await PDFDocument.create();
+    
+    // Embed fonts
+    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    // Define measurements
+    const pageWidth = 595.28; // A4 width in points
+    const pageHeight = 841.89; // A4 height in points
+    const margin = 25;
+    const tableStartY = pageHeight - 180;
+    const rowHeight = 25;
+    const maxRowsPerPage = Math.floor((tableStartY - margin - 50) / rowHeight);
+
+    // Embed header image
+    const headerImageFile = fs.readFileSync(generalHeaderImagePath);
+    const headerImage = await pdfDoc.embedPng(headerImageFile);
+    const { width: headerImageWidth, height: headerImageHeight } = 
+      headerImage.scaleToFit(pageWidth - 2 * margin, 100);
+
+    // Define column widths (Total: 545)
+    const columnWidths = {
+      slNo: 35,
+      chestNo: 70,
+      name: 260,
+      regId: 80,
+      participation: 100
+    };
+
+    // Helper function to create a new page
+    const createPage = (pageNumber, totalPages) => {
+      const page = pdfDoc.addPage([pageWidth, pageHeight]);
+      
+      // Draw header image
+      page.drawImage(headerImage, {
+        x: pageWidth / 2 - headerImageWidth / 2,
+        y: pageHeight - margin - headerImageHeight,
+        width: headerImageWidth,
+        height: headerImageHeight,
+      });
+
+      // Draw program name
+      page.drawText(programName, {
+        x: pageWidth / 2 - helveticaBold.widthOfTextAtSize(programName, 14) / 2,
+        y: pageHeight - margin - headerImageHeight - 25,
+        font: helveticaBold,
+        size: 14
+      });
+
+      // Draw page number
+      page.drawText(`Page ${pageNumber} of ${totalPages}`, {
+        x: pageWidth - margin - 45,
+        y: margin,
+        font: helvetica,
+        size: 8,
+				color: rgb(0.5, 0.5, 0.5)
+      });
+
+      return page;
+    };
+
+    // Helper function to draw table headers
+    const drawTableHeaders = (page, y) => {
+      let x = margin;
+      const headers = [
+        { text: "Sl.No", width: columnWidths.slNo },
+        { text: "Chest No", width: columnWidths.chestNo },
+        { text: "Name", width: columnWidths.name },
+        { text: "Reg ID", width: columnWidths.regId },
+        { text: "Participation", width: columnWidths.participation }
+      ];
+
+      // Draw header background
+      page.drawRectangle({
+        x: margin,
+        y: y - rowHeight,
+        width: pageWidth - 2 * margin,
+        height: rowHeight,
+        color: rgb(0.9, 0.9, 0.9)
+      });
+
+      // Draw header texts
+      headers.forEach(header => {
+				page.drawRectangle({
+					x,
+					y: y - rowHeight,
+					width: header.width,
+					height: rowHeight,
+					borderColor: rgb(0, 0, 0),
+					borderWidth: 1
+				})
+
+        page.drawText(header.text, {
+          x: x + 5,
+          y: y - rowHeight + 8,
+          font: helveticaBold,
+          size: 10
+        });
+        
+        x += header.width;
+      });
+    };
+
+    // Calculate total pages needed
+    const totalPages = Math.ceil(participants.length / maxRowsPerPage);
+
+    // Generate pages
+    let currentPage = 1;
+    for (let i = 0; i < participants.length; i += maxRowsPerPage) {
+      const page = createPage(currentPage, totalPages);
+      const pageParticipants = participants.slice(i, i + maxRowsPerPage);
+      let y = tableStartY;
+
+      // Draw table headers
+      drawTableHeaders(page, y);
+      y -= rowHeight;
+
+      // Draw participant rows
+      pageParticipants.forEach((participant, index) => {
+        let x = margin;
+        const rowData = [
+          { text: (i + index + 1).toString(), width: columnWidths.slNo },
+          { text: "", width: columnWidths.chestNo }, // Empty chest number column
+          { text: participant.name, width: columnWidths.name },
+          { text: participant.regId, width: columnWidths.regId },
+          { text: "", width: columnWidths.participation } // Empty participation column
+        ];
+
+        // Draw row background (alternate colors)
+        page.drawRectangle({
+          x: margin,
+          y: y - rowHeight,
+          width: pageWidth - 2 * margin,
+          height: rowHeight,
+          color: index % 2 === 0 ? rgb(1, 1, 1) : rgb(0.95, 0.95, 0.95)
+        });
+
+        // Draw row data
+        rowData.forEach(data => {
+					// Draw cell border
+					page.drawRectangle({
+						x,
+						y: y - rowHeight,
+						width: data.width,
+						height: rowHeight,
+						borderColor: rgb(0, 0, 0),
+						borderWidth: 1
+					})
+
+          // Draw cell text
+          page.drawText(data.text, {
+            x: x + 5,
+            y: y - rowHeight + 8,
+            font: helvetica,
+            size: 10,
+            maxWidth: data.width - 10
+          });
+
+          x += data.width;
+        });
+
+        y -= rowHeight;
+      });
+
+      currentPage++;
     }
 
     return await pdfDoc.save();
